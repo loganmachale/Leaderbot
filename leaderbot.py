@@ -35,13 +35,13 @@ async def hello(ctx):
 
 
 @bot.command()
-def refresh(ctx, lim):
-    commands_c.send('refreshing with last {} matches...'.format(lim))
-    get_results(ctx, lim)
+async def refresh(ctx, lim):
+    await commands_c.send('refreshing with last {} matches...'.format(lim))
+    await get_results(ctx, lim)
     
 
 def get_results(ctx, lim):
-    messages = ctx.channel.history(limit=lim)
-    commands_c.send(messages)
+    messages = ctx.results_c.history(limit=lim)
+    return commands_c.send(messages)
 
 bot.run(BOT_TOKEN)
