@@ -1,14 +1,31 @@
 from discord.ext import commands
 import discord
+import pickle
+import csv
 
-# L_MAIN
-# L_BACKUP
+def save_object(obj):
+    try:
+        with open("playerdata.pickle", "wb") as f:
+            pickle.dump(obj, f, protocol=pickle.HIGHEST_PROTOCOL)
+    except Exception as ex:
+        print("Error during pickling object (Possibly unsupported):", ex)
+
+
+def load_object(filename):
+    try:
+        with open(filename, "rb") as f:
+            return pickle.load(f)
+    except Exception as ex:
+        print("Error during unpickling object (Possibly unsupported):", ex)
+
 
 class Player:
-    def __init__(self, name, kd, wl)
+    def __init__(self, name, kills, deaths, wins, losses):
         self.name = name
-        self.kd = kd
-        self.wl = wl
+        self.kills = kills
+        self.deaths = deaths
+        self.wins = wins
+        self.losses = losses
 
 BOT_TOKEN = "MTI2NjI4NDAxNjExNDQ3MDk2Ng.GVS3M0.soc2PKfD2TvF9wq9V4S2EgJDYZo1ew4MGeyUgc"
 
@@ -40,25 +57,20 @@ async def hello(ctx):
 @bot.event
 async def on_message(message):
     author = message.author
-    content = message.content
     in_channel = message.channel
-    if author != bot.user:
-        if in_channel == results_c:
-            await results_c.send('working')
-            await results_c.send(content)
-        else:
-            await in_channel.send('wrong channel')
-
-
+    attachments = message.attachments
+    if author != bot.user and in_channel == results_c and len(attachments) != 0:
+            
 @bot.command
 async def refresh(ctx, lim):
     await commands_c.send('refreshing with last {} matches...'.format(lim))
-    await get_results(ctx, lim)
 
-
-def get_results(ctx, lim):
-    messages = results_c.history(limit=lim)
-    return commands_c.send(messages)
-
+def parse_results(attachments):
+    playerlist = []
+    
+    with open(attachments, mode='r') as file:
+        reader = csv.DictReader(file)
+        for row in reader:
+            playerlist.append(row)
 
 bot.run(BOT_TOKEN)
