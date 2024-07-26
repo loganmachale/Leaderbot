@@ -20,12 +20,14 @@ def load_object(filename):
 
 
 class Player:
-    def __init__(self, name, kills, deaths, wins, losses):
+    def __init__(self, name, kost, kills, deaths, wins, losses, points):
         self.name = name
+        self.kost = kost
         self.kills = kills
         self.deaths = deaths
         self.wins = wins
         self.losses = losses
+        self.points = points
 
 BOT_TOKEN = "MTI2NjI4NDAxNjExNDQ3MDk2Ng.GVS3M0.soc2PKfD2TvF9wq9V4S2EgJDYZo1ew4MGeyUgc"
 
@@ -60,17 +62,46 @@ async def on_message(message):
     in_channel = message.channel
     attachments = message.attachments
     if author != bot.user and in_channel == results_c and len(attachments) != 0:
-            
+        for game in attachments:
+            file_path = f'./{game.filename}'
+            await game.save(file_path)
+            results = parse_results(file_path)
+            print(results)
+
 @bot.command
 async def refresh(ctx, lim):
     await commands_c.send('refreshing with last {} matches...'.format(lim))
 
-def parse_results(attachments):
+def parse_results(file_path):
     playerlist = []
     
-    with open(attachments, mode='r') as file:
-        reader = csv.DictReader(file)
+    with open(file_path, mode='r') as csvfile:
+        reader = csv.reader(csvfile)
+        
+        for i in range(4):
+            next(reader)
+
+        r = 4
         for row in reader:
-            playerlist.append(row)
+            if r == 4:
+                team1_score = row[9]
+                team2_score = row[10]
+                team1_win = team1_score > team2_score
+            
+            if team1_win and r >= 7 and r <= 11:
+                player = Player(row[3], row[10], row[16], row[22], 1, 0, row[30])
+                playerlist.append(player)
+            elif team1_win and r > 11:
+                player = Player(row[3], row[10], row[16], row[22], 0, 1, row[30])
+                playerlist.append(player)
+            elif not team1_win and r >= 7 and r <= 11:
+                player = Player(row[3], row[10], row[16], row[22], 0, 1, row[30])
+                playerlist.append(player)
+            elif not team1_win and r > 11:
+                player = Player(row[3], row[10], row[16], row[22], 1, 0, row[30])
+                playerlist.append(player)
+            r += 1
+        
+        return playerlist
 
 bot.run(BOT_TOKEN)
