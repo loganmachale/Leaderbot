@@ -158,15 +158,21 @@ def update_player_data(match_data):
 # def update_leaderboard(player_data):
 
 
-def elo_func(kost, kills, deaths, wins, losses):
+def elo_func(kost, kills, deaths, win):
     kost_mu = 0.55
-    kost_sigma = 0.15
+    kost_sigma = 0.2
     dist = sps.norm(loc=kost_mu, scale=kost_sigma)
-    p = dist.cdf(kost)
+    p = dist.cdf(kost + ((kost - 0.55) ** 2) / 7 + (kost - 0.55) / 9)
 
-    kost_factor = (np.sqrt(2) - 2 + 2 * (1 - np.sqrt(2)) * p) ** 2
+    if int(kost) == 1:
+        kost_factor = 2
+    else:    
+        kost_factor = (np.sqrt(2) - 2 + 2 * (1 - np.sqrt(2)) * p) ** 2
 
-    return (wins * 150 - losses * 100 ) * kost_factor + kills * 10 - deaths * 10
+    if win:
+        return round(150 * kost_factor + kills * 10 - deaths * 10)
+    else:
+        return round(-100 * (2 + 0.343265 - kost_factor) + kills * 10 - deaths * 10)
 
 # def get_rank(player):
 
