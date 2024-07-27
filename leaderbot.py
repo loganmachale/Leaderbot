@@ -91,11 +91,6 @@ async def on_message(message):
             os.remove(file_path)
 
 
-# @bot.command
-# async def refresh(ctx, lim):
-#     await commands_c.send('refreshing with last {} matches...'.format(lim))
-
-
 def parse_results(file_path):
     playerlist = []
     
