@@ -3,6 +3,8 @@ import discord
 import pickle
 import csv
 import os
+import numpy as np
+import scipy.stats as sps
 
 
 def save_object(obj, fname):
@@ -34,7 +36,7 @@ def load_object(filename):
 
 
 class Player:
-    def __init__(self, name, kost, kills, deaths, wins, losses, points):
+    def __init__(self, name, kost, kills, deaths, wins, losses, points, elo):
         self.name = name
         self.kost = kost
         self.kills = kills
@@ -42,6 +44,7 @@ class Player:
         self.wins = wins
         self.losses = losses
         self.points = points
+        self.elo = elo
 
 BOT_TOKEN = "MTI2NjI4NDAxNjExNDQ3MDk2Ng.GVS3M0.soc2PKfD2TvF9wq9V4S2EgJDYZo1ew4MGeyUgc"
 
@@ -110,16 +113,16 @@ def parse_results(file_path):
                 team1_win = team1_score > team2_score
 
             if team1_win and r >= 8 and r <= 12:
-                player = Player(row[3], float(row[10]), int(row[16]), int(row[22]), 1, 0, int(row[30]))
+                player = Player(row[3], float(row[10]), int(row[16]), int(row[22]), 1, 0, int(row[30]), 0)
                 playerlist.append(player)
             elif team1_win and r > 12:
-                player = Player(row[3], float(row[10]), int(row[16]), int(row[22]), 0, 1, int(row[30]))
+                player = Player(row[3], float(row[10]), int(row[16]), int(row[22]), 0, 1, int(row[30]), 0)
                 playerlist.append(player)
             elif not team1_win and r >= 8 and r <= 12:
-                player = Player(row[3], float(row[10]), int(row[16]), int(row[22]), 0, 1, int(row[30]))
+                player = Player(row[3], float(row[10]), int(row[16]), int(row[22]), 0, 1, int(row[30]), 0)
                 playerlist.append(player)
             elif not team1_win and r > 12:
-                player = Player(row[3], float(row[10]), int(row[16]), int(row[22]), 1, 0, int(row[30]))
+                player = Player(row[3], float(row[10]), int(row[16]), int(row[22]), 1, 0, int(row[30]), 0)
                 playerlist.append(player)
             r += 1
 
@@ -156,15 +159,48 @@ def update_player_data(match_data):
     save_object(PLAYER_DATA, 'player_data.pickle')
     save_object(KNOWN_PLAYERS, 'known_players.pickle')
 
-    for i in PLAYER_DATA:
-        print(i.name, i.kost, i.kills, i.deaths, i.wins, i.losses, i.points)
-
 
 # def update_leaderboard(player_data):
+
+
+def elo_func(kost, kills, deaths, wins, losses):
+    kost_mu = 0.55
+    kost_sigma = 0.15
+    dist = sps.norm(loc=kost_mu, scale=kost_sigma)
+    p = dist.cdf(kost)
+
+    kost_factor = (np.sqrt(2) - 2 + 2 * (1 - np.sqrt(2)) * p) ** 2
+
+    return (wins * 150 - losses * 100 ) * kost_factor + kills * 10 - deaths * 10
+
+# def get_rank(player):
 
 
 # @bot.command
 # async def revert():
 
+
+# @bot.command
+# async def stats(ctx, player):
+#     if ctx.channel == commands_c and player in KNOWN_PLAYERS:
+#         ctx.send(STATS)
+#     elif ctx.channel == commands_c and player not in KNOWN_PLAYERS:
+#         ctx.send('player not found')
+#     elif ctx.channel != commands_c and player in KNOWN_PLAYERS:
+#         ctx.send('wrong channel')
+#     elif ctx.channel != commands_c and player not in KNOWN_PLAYERS:
+#         ctx.send('player not found and wrong channel!')    
+
+
+# @bot.command
+# async def rank(ctx, player):
+#     if ctx.channel == commands_c and player in KNOWN_PLAYERS:
+#         ctx.send(RANK)
+#     elif ctx.channel == commands_c and player not in KNOWN_PLAYERS:
+#         ctx.send('player not found')
+#     elif ctx.channel != commands_c and player in KNOWN_PLAYERS:
+#         ctx.send('wrong channel')
+#     elif ctx.channel != commands_c and player not in KNOWN_PLAYERS:
+#         ctx.send('player not found and wrong channel!')  
 
 bot.run(BOT_TOKEN)
