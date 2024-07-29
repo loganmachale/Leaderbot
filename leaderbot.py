@@ -8,7 +8,6 @@ import scipy.stats as sps
 from table2ascii import table2ascii as t2a, PresetStyle
 import json
 
-
 def save_object(obj, fname):
     try:
         with open(fname, "wb") as f:
@@ -25,16 +24,31 @@ def load_object(filename):
         print("Error during unpickling object (Possibly unsupported):", ex)
 
 
-# def first_run():
-#     '''
-#     creates all necessary starter files from which record can pile on.
-#     WARNING: will erase all current player records, leave commented out!
-#     '''
-#     KNOWN_PLAYERS = []
-#     PLAYER_DATA = []
+def initialize():
+    '''
+    creates all necessary starter files from which record can pile on.
+    WARNING: will erase all current player records, leave commented out!
+    '''
+    global MATCH_HIST
+    global KNOWN_PLAYERS
+    global PLAYER_LEADERBOARD
+    global PLAYER_DATA
+    global BANNED_PLAYERS
 
-#     save_object(KNOWN_PLAYERS, 'known_players.pickle')
-#     save_object(PLAYER_DATA, 'player_data.pickle')
+    MATCH_HIST = []
+    KNOWN_PLAYERS = []
+    PLAYER_DATA = []
+    PLAYER_LEADERBOARD = []
+    BANNED_PLAYERS = []
+
+    save_object(KNOWN_PLAYERS, 'known_players.pickle')
+    save_object(PLAYER_DATA, 'player_data.pickle')
+    save_object(MATCH_HIST, 'match_hist.pickle')
+    save_object(PLAYER_LEADERBOARD, 'player_leaderboard.pickle')
+    save_object(BANNED_PLAYERS, 'banned_players.pickle')
+
+
+initialize()
 
 
 class Player:
@@ -50,14 +64,17 @@ class Player:
         self.elo = elo
         self.p_id = p_id
 
+### initialize() ### only uncomment when sure
+
 BOT_TOKEN = "MTI2NjI4NDAxNjExNDQ3MDk2Ng.GVS3M0.soc2PKfD2TvF9wq9V4S2EgJDYZo1ew4MGeyUgc"
 
 LEADERBOARD_CHANNEL = 1266283285516910705
 COMMANDS_CHANNEL = 1266283316844429426
 JSON_RESULTS_CHANNEL = 1266283405050380302
 
+BANNED_PLAYERS = load_object('banned_players.pickle')
 PLAYER_DATA = load_object('player_data.pickle')
-KNOWN_PLAYERS = load_object('player_data.pickle')
+KNOWN_PLAYERS = load_object('known_players.pickle')
 PLAYER_LEADERBOARD = load_object('player_leaderboard.pickle')
 LB1_MSG_ID = load_object('lb1_msg_id.pickle')
 LB2_MSG_ID = load_object('lb2_msg_id.pickle')
@@ -90,6 +107,9 @@ async def hello(ctx):
 # on message to results channel will extract match data and auto-update leaderboard
 @bot.event
 async def on_message(message):
+    global MATCH_HIST
+    global PLAYER_DATA
+    
     await bot.process_commands(message)
     author = message.author
     in_channel = message.channel
@@ -99,6 +119,12 @@ async def on_message(message):
             file_path = f'./{game.filename}'
             await game.save(file_path)  
             results = parse_json_results(file_path)
+            
+            MATCH_HIST = load_object('match_hist.pickle')
+            MATCH_HIST.append(results)
+            save_object(MATCH_HIST, 'match_hist.pickle')
+            del MATCH_HIST
+
             await validate_match(results)
             update_player_data(results)
             await update_leaderboard(PLAYER_DATA)
@@ -238,32 +264,32 @@ async def update_leaderboard(player_data):
                         p.deaths, '{:.2f}'.format(p.kills),
                         '{:.2f}'.format(p.kost)])
         r += 1
-        if r > 95:
+        if r > 90:
             break
 
     output1 = t2a(
         header=['Rank', 'Name', 'Elo', 'Wins', 'Losses', 'Kills', 'Deaths', 'K/D', 'KOST'],
-        body=p_list[:19]
+        body=p_list[:18]
     )
 
     output2 = t2a(
         header=['Rank', 'Name', 'Elo', 'Wins', 'Losses', 'Kills', 'Deaths', 'K/D', 'KOST'],
-        body=p_list[19:38]
+        body=p_list[18:36]
     )
 
     output3 = t2a(
         header=['Rank', 'Name', 'Elo', 'Wins', 'Losses', 'Kills', 'Deaths', 'K/D', 'KOST'],
-        body=p_list[38:57]
+        body=p_list[36:54]
     )
 
     output4 = t2a(
         header=['Rank', 'Name', 'Elo', 'Wins', 'Losses', 'Kills', 'Deaths', 'K/D', 'KOST'],
-        body=p_list[57:76]
+        body=p_list[54:72]
     )
 
     output5 = t2a(
         header=['Rank', 'Name', 'Elo', 'Wins', 'Losses', 'Kills', 'Deaths', 'K/D', 'KOST'],
-        body=p_list[76:95]
+        body=p_list[72:90]
     )
 
     await b1_msg.edit(content=head + '```{}```'.format(output1))
@@ -418,6 +444,52 @@ async def wipe_player_data(ctx, password):
         save_object(PLAYER_DATA, 'player_data.pickle')
         save_object(KNOWN_PLAYERS, 'known_players.pickle')
         save_object(PLAYER_LEADERBOARD, 'player_leaderboard.pickle')
+
+
+@bot.command()
+async def ban(ctx, user):
+    global MATCH_HIST
+    global PLAYER_DATA
+
+    MATCH_HIST = load_object('match_hist.pickle')
+    cheat_matches = []
+
+    for match in MATCH_HIST:
+        for player in match:
+            if user == player.name:
+                cheat_matches.append(match)
+                cheater = player
+                break
+                
+    for game in cheat_matches:
+        for m_player in game:
+            p_win = m_player.wins == 1
+            p_ind = KNOWN_PLAYERS.index(m_player.p_id)
+            p = PLAYER_DATA[p_ind]
+            p_games = p.wins + p.losses
+            # p.kost = (p.kost * p_games - m_player.kost) / (p_games + 1)
+            p.kills -= m_player.kills
+            p.deaths -= m_player.deaths
+            p.wins -= m_player.wins
+            p.losses -= m_player.losses
+            p.points -= m_player.points
+            p.elo -= elo_func(m_player.kost, m_player.kills, m_player.deaths, p_win)
+    save_object(PLAYER_DATA, 'player_data.pickle')
+    
+    MATCH_HIST.remove(match)
+    KNOWN_PLAYERS.remove(cheater.p_id)
+    BANNED_PLAYERS.append(cheater)
+    for pr in PLAYER_DATA:
+        if pr.name == user:
+            PLAYER_DATA.remove(pr)
+
+    save_object(MATCH_HIST, 'match_hist.pickle')
+    save_object(PLAYER_DATA, 'player_data.pickle')
+    save_object(KNOWN_PLAYERS, 'known_players.pickle')
+    save_object(BANNED_PLAYERS, 'banned_players.pickle')
+
+    del MATCH_HIST
+    await update_leaderboard(PLAYER_DATA)
 
 
 bot.run(BOT_TOKEN)
