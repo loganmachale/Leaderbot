@@ -66,9 +66,7 @@ class Player:
         self.elo = elo
         self.p_id = p_id
 
-initialize() ### only uncomment when sure
-
-BOT_TOKEN = "MTI2NjI4NDAxNjExNDQ3MDk2Ng.GYWvK8.hFa21s79mltWB7dT4sl3ujS4wqT5IrTYd05Nao"
+# initialize() ### only uncomment when sure
 
 LEADERBOARD_CHANNEL = 1246293946607341609
 COMMANDS_CHANNEL = 1267631737110794332
