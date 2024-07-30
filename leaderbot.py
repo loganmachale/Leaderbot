@@ -34,6 +34,11 @@ def initialize():
     global PLAYER_LEADERBOARD
     global PLAYER_DATA
     global BANNED_PLAYERS
+    global LB1_MSG_ID
+    global LB2_MSG_ID
+    global LB3_MSG_ID
+    global LB4_MSG_ID
+    global LB5_MSG_ID
 
     MATCH_HIST = []
     KNOWN_PLAYERS = []
@@ -46,9 +51,6 @@ def initialize():
     save_object(MATCH_HIST, 'match_hist.pickle')
     save_object(PLAYER_LEADERBOARD, 'player_leaderboard.pickle')
     save_object(BANNED_PLAYERS, 'banned_players.pickle')
-
-
-initialize()
 
 
 class Player:
@@ -64,13 +66,13 @@ class Player:
         self.elo = elo
         self.p_id = p_id
 
-### initialize() ### only uncomment when sure
+initialize() ### only uncomment when sure
 
-BOT_TOKEN = "MTI2NjI4NDAxNjExNDQ3MDk2Ng.GVS3M0.soc2PKfD2TvF9wq9V4S2EgJDYZo1ew4MGeyUgc"
+BOT_TOKEN = "MTI2NjI4NDAxNjExNDQ3MDk2Ng.GYWvK8.hFa21s79mltWB7dT4sl3ujS4wqT5IrTYd05Nao"
 
-LEADERBOARD_CHANNEL = 1266283285516910705
-COMMANDS_CHANNEL = 1266283316844429426
-JSON_RESULTS_CHANNEL = 1266283405050380302
+LEADERBOARD_CHANNEL = 1246293946607341609
+COMMANDS_CHANNEL = 1267631737110794332
+JSON_RESULTS_CHANNEL = 1266836970789666868
 
 BANNED_PLAYERS = load_object('banned_players.pickle')
 PLAYER_DATA = load_object('player_data.pickle')
@@ -490,6 +492,33 @@ async def ban(ctx, user):
 
     del MATCH_HIST
     await update_leaderboard(PLAYER_DATA)
+
+
+@bot.command()
+async def new_lb(ctx):
+    global LB1_MSG_ID
+    global LB2_MSG_ID
+    global LB3_MSG_ID
+    global LB4_MSG_ID
+    global LB5_MSG_ID
+    
+    b1_msg = await leaderboard_c.send('```\n```')
+    b2_msg = await leaderboard_c.send('```\n```')
+    b3_msg = await leaderboard_c.send('```\n```')
+    b4_msg = await leaderboard_c.send('```\n```')
+    b5_msg = await leaderboard_c.send('```\n```')
+
+    LB1_MSG_ID = b1_msg.id
+    LB2_MSG_ID = b2_msg.id
+    LB3_MSG_ID = b3_msg.id
+    LB4_MSG_ID = b4_msg.id
+    LB5_MSG_ID = b5_msg.id
+
+    save_object(LB1_MSG_ID, 'lb1_msg_id.pickle')
+    save_object(LB2_MSG_ID, 'lb2_msg_id.pickle')
+    save_object(LB3_MSG_ID, 'lb3_msg_id.pickle')
+    save_object(LB4_MSG_ID, 'lb4_msg_id.pickle')
+    save_object(LB5_MSG_ID, 'lb5_msg_id.pickle')
 
 
 bot.run(BOT_TOKEN)

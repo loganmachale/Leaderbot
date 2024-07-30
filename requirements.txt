@@ -1,0 +1,4 @@
+discord.py
+numpy
+scipy
+table2ascii
